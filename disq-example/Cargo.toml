@@ -1,0 +1,28 @@
+[package]
+name = "disq-example"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1.53"
+disq = { path = "../disq" }
+serde_json = "1.0.77"
+tokio = { version = "1.17.0", features = ["full"] }
+log = "0.4.16"
+simple_logger = "2.1.0"
+
+[dependencies.serenity]
+version = "0.10"
+default-features = false
+features = [
+    "builder",
+    "client",
+    "cache",
+    "gateway",
+    "http",
+    "model",
+    "utils",
+    "rustls_backend",
+]
