@@ -1,9 +1,5 @@
-use async_trait::async_trait;
-use disq::yeet::{Destination, YeetOptions, Yeeter, YeeterBuilder};
-use serenity::client::{Client, Context, EventHandler};
-use serenity::http::Http;
-use serenity::model::prelude::Ready;
-use tokio::task;
+use disq::yeet::{Destination, YeetOptions, YeeterBuilder};
+use serenity::client::Client;
 
 const TOKEN: &str = "BOT_TOKEN";
 

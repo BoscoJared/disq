@@ -20,3 +20,15 @@
 //! - Discord is a chat application
 //!
 //! Still here? Let's do this!
+
+use serenity::client::ClientBuilder;
+
+pub mod errors;
+pub mod yeet;
+pub mod yoink;
+
+pub use crate::yeet::Yeeter;
+
+pub fn register(client_builder: ClientBuilder) -> ClientBuilder {
+    client_builder
+}
