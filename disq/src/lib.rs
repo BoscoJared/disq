@@ -28,6 +28,7 @@ pub mod yeet;
 pub mod yoink;
 
 pub use crate::yeet::Yeeter;
+pub use crate::yoink::Yoinker;
 
 pub fn register(client_builder: ClientBuilder) -> ClientBuilder {
     client_builder

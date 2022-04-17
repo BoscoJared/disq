@@ -7,11 +7,14 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.53"
+clap = { version = "3.1.9", features = ["derive"] }
 disq = { path = "../disq" }
+serde = "1.0.136"
 serde_json = "1.0.77"
 tokio = { version = "1.17.0", features = ["full"] }
 log = "0.4.16"
 simple_logger = "2.1.0"
+futures = "0.3.21"
 
 [dependencies.serenity]
 version = "0.10"

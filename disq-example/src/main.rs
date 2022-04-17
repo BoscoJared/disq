@@ -1,16 +1,79 @@
-use disq::yeet::{Destination, YeetOptions, YeeterBuilder};
+use async_trait::async_trait;
+use clap::{ArgEnum, Parser};
+use disq::{
+    yeet::{Destination, YeetOptions, YeeterBuilder},
+    yoink::YoinkOptions,
+    Yeeter, Yoinker,
+};
+use serde::{Deserialize, Serialize};
 use serenity::client::Client;
+use std::time::{Duration, SystemTime};
 
-const TOKEN: &str = "BOT_TOKEN";
+const YEETER_TOKEN: &str = "YEETER_TOKEN";
+const YOINKER_TOKEN: &str = "YOINKER_TOKEN";
+
+#[derive(Parser, Debug)]
+struct ExampleArgs {
+    #[clap(short = 'm', long = "mode", arg_enum)]
+    mode: Mode,
+    #[clap(short = 'l', long = "log-level")]
+    log_level: log::Level,
+}
+
+#[derive(ArgEnum, Clone, Debug)]
+enum Mode {
+    Yeeter,
+    Yoinker,
+    Both,
+}
 
 #[tokio::main]
 async fn main() {
-    simple_logger::init_with_level(log::Level::Debug).unwrap();
+    let args = ExampleArgs::parse();
+    let log_level = args.log_level;
+    simple_logger::init_with_level(log_level).unwrap();
+    let mode = args.mode;
 
-    let token = std::env::var(TOKEN).expect("Could not load the bot token!");
+    match mode {
+        Mode::Yeeter => run_yeeter().await,
+        Mode::Yoinker => run_yoinker().await,
+        Mode::Both => {
+            futures::join!(async { run_yeeter().await }, async { run_yoinker().await });
+            ()
+        }
+    }
+}
+
+async fn run_yoinker() {
+    let token = std::env::var(YOINKER_TOKEN).expect("Could not load the bot token!");
     let builder = Client::builder(token);
 
-    let (builder, recv) = YeeterBuilder::<&str>::register(builder, Destination, YeetOptions);
+    let yoinker = Subscriber;
+    let builder = yoinker.register(builder, YoinkOptions);
+
+    let handle = tokio::spawn(async move {
+        let mut client = builder.await.expect("Could not build the client!");
+        println!("Starting up the bot...");
+        if let Err(err) = client.start().await {
+            println!("Whoops, that was an error! {:?}", err);
+        }
+    });
+
+    // Indefinitely loop and let the Discord framework spin
+    if let Err(err) = handle.await {
+        log::error!("Whoops: {:?}", err);
+    };
+}
+
+async fn run_yeeter() {
+    let token = std::env::var(YEETER_TOKEN).expect("Could not load the bot token!");
+    let builder = Client::builder(token);
+
+    let (builder, recv) = YeeterBuilder::<Payload>::register(
+        builder,
+        Destination::Channel(964704258517766218),
+        YeetOptions,
+    );
 
     let handle = tokio::spawn(async move {
         let mut client = builder.await.expect("Could not build the client!");
@@ -21,9 +84,45 @@ async fn main() {
     });
 
     let yeeter = recv.recv().expect("Could not get the passed back Yeeter");
-    yeeter.yeet("From main.rs:28!").await.expect("whoops");
 
+    // Spawn a Yeeter to write every 5 seconds
+    tokio::spawn(async move {
+        message(&yeeter, "Hello, World!").await;
+    });
+
+    // Indefinitely loop and let the Discord framework spin
     if let Err(err) = handle.await {
         log::error!("Whoops: {:?}", err);
     };
+}
+
+async fn message(yeeter: &Yeeter<Payload>, message: &str) {
+    loop {
+        let payload = Payload {
+            content: message.to_owned(),
+            time: SystemTime::now(),
+            author: "Yeeter#7197".to_owned(),
+        };
+        yeeter
+            .yeet(payload)
+            .await
+            .expect("couldn't talk to discord!");
+        tokio::time::sleep(Duration::from_secs(5)).await;
+    }
+}
+
+struct Subscriber;
+
+#[async_trait]
+impl Yoinker<Payload> for Subscriber {
+    async fn on_message(&self, data: Payload) {
+        log::warn!("Got data: {:?}", data);
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Payload {
+    content: String,
+    time: SystemTime,
+    author: String,
 }

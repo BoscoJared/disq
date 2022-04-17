@@ -3,6 +3,7 @@
 
 use crate::errors::{DisqError, Result};
 use async_trait::async_trait;
+use serde::Serialize;
 use serenity::client::ClientBuilder;
 use serenity::client::{Context, EventHandler};
 use serenity::http::client::Http;
@@ -28,7 +29,7 @@ pub struct YeeterBuilder<T> {
     _inner: PhantomData<T>,
 }
 
-impl<T: Sync + Send + ToString + 'static> YeeterBuilder<T> {
+impl<T: Sync + Send + Serialize + 'static> YeeterBuilder<T> {
     pub fn new(destination: Destination, options: YeetOptions, send: Sender<Yeeter<T>>) -> Self {
         YeeterBuilder {
             destination,
@@ -49,7 +50,7 @@ impl<T: Sync + Send + ToString + 'static> YeeterBuilder<T> {
     }
 }
 
-impl<T: ToString> Yeeter<T> {
+impl<T: Serialize> Yeeter<T> {
     pub fn new(http_client: Arc<Http>, destination: Destination, options: YeetOptions) -> Self {
         Self {
             http_client,
@@ -59,10 +60,15 @@ impl<T: ToString> Yeeter<T> {
         }
     }
     pub async fn yeet(&self, data: T) -> Result<()> {
-        ChannelId(964704258517766218)
-            .send_message(&self.http_client, |msg| msg.content(data.to_string()))
-            .await
-            .unwrap();
+        match self.destination {
+            Destination::Channel(channel_id) => {
+                ChannelId(channel_id)
+                    .send_message(&self.http_client, |msg| {
+                        msg.content(serde_json::to_string(&data).unwrap())
+                    })
+                    .await?;
+            }
+        }
         Ok(())
     }
 }
@@ -71,10 +77,12 @@ impl<T: ToString> Yeeter<T> {
 pub struct YeetOptions;
 
 #[derive(Debug, Clone)]
-pub struct Destination;
+pub enum Destination {
+    Channel(u64),
+}
 
 #[async_trait]
-impl<T: Send + Sync + ToString> EventHandler for YeeterBuilder<T> {
+impl<T: Send + Sync + Serialize> EventHandler for YeeterBuilder<T> {
     async fn ready(&self, ctx: Context, _data: Ready) {
         let send = self.send.lock().unwrap();
         let yeeter = Yeeter::<T>::new(
