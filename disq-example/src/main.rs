@@ -33,23 +33,26 @@ async fn main() {
     let log_level = args.log_level;
     simple_logger::init_with_level(log_level).unwrap();
     let mode = args.mode;
+    let destination = Destination::Channel(964704258517766218);
 
     match mode {
-        Mode::Yeeter => run_yeeter().await,
-        Mode::Yoinker => run_yoinker().await,
+        Mode::Yeeter => run_yeeter(destination).await,
+        Mode::Yoinker => run_yoinker(destination).await,
         Mode::Both => {
-            futures::join!(async { run_yeeter().await }, async { run_yoinker().await });
+            futures::join!(async { run_yeeter(destination.clone()).await }, async {
+                run_yoinker(destination.clone()).await
+            });
             ()
         }
     }
 }
 
-async fn run_yoinker() {
+async fn run_yoinker(destination: Destination) {
     let token = std::env::var(YOINKER_TOKEN).expect("Could not load the bot token!");
     let builder = Client::builder(token);
 
     let yoinker = Subscriber;
-    let builder = yoinker.register(builder, YoinkOptions);
+    let builder = yoinker.register(builder, destination, YoinkOptions);
 
     let handle = tokio::spawn(async move {
         let mut client = builder.await.expect("Could not build the client!");
@@ -65,15 +68,11 @@ async fn run_yoinker() {
     };
 }
 
-async fn run_yeeter() {
+async fn run_yeeter(destination: Destination) {
     let token = std::env::var(YEETER_TOKEN).expect("Could not load the bot token!");
     let builder = Client::builder(token);
 
-    let (builder, recv) = YeeterBuilder::<Payload>::register(
-        builder,
-        Destination::Channel(964704258517766218),
-        YeetOptions,
-    );
+    let (builder, recv) = YeeterBuilder::<Payload>::register(builder, destination, YeetOptions);
 
     let handle = tokio::spawn(async move {
         let mut client = builder.await.expect("Could not build the client!");
