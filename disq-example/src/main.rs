@@ -33,7 +33,7 @@ async fn main() {
     let log_level = args.log_level;
     simple_logger::init_with_level(log_level).unwrap();
     let mode = args.mode;
-    let destination = Destination::Channel(964704258517766218);
+    let destination = Destination::Channel(965091322119720991);
 
     match mode {
         Mode::Yeeter => run_yeeter(destination).await,
@@ -106,7 +106,7 @@ async fn message(yeeter: &Yeeter<Payload>, message: &str) {
             .yeet(payload)
             .await
             .expect("couldn't talk to discord!");
-        tokio::time::sleep(Duration::from_secs(5)).await;
+        // tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }
 
@@ -115,7 +115,7 @@ struct Subscriber;
 #[async_trait]
 impl Yoinker<Payload> for Subscriber {
     async fn on_message(&self, data: Payload) {
-        log::warn!("Got data: {:?}", data);
+        // log::warn!("Got data: {:?}", data);
     }
 }
 

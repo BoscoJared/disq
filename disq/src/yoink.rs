@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serenity::client::{ClientBuilder, Context, EventHandler};
 use serenity::futures::StreamExt;
+use serenity::model::channel::ReactionType;
 use serenity::model::id::ChannelId;
 use serenity::model::prelude::{Message, Ready};
 use std::marker::PhantomData;
@@ -68,13 +69,29 @@ impl<T: Send + Sync + DeserializeOwned + 'static, Y: Yoinker<T> + Send + Sync + 
                 let mut stream = ChannelId(channel_id).messages_iter(&ctx.http).boxed();
                 while let Some(msg_res) = stream.next().await {
                     if let Ok(msg) = msg_res {
-                        self.process_message(msg).await;
+                        let already_processed = msg
+                            .reactions
+                            .iter()
+                            .map(|message_react| &message_react.reaction_type)
+                            .any(|reaction_type| {
+                                *reaction_type == ReactionType::try_from("✅").unwrap()
+                            });
+
+                        if already_processed {
+                            return;
+                        }
+
+                        match msg.react(&ctx, ReactionType::try_from("✅").unwrap()).await {
+                            Ok(_) => self.process_message(msg).await,
+                            Err(err) => log::error!("Got some error: {:?}", err),
+                        }
                     }
                 }
             }
         }
     }
-    async fn message(&self, _ctx: Context, msg: Message) {
+    async fn message(&self, ctx: Context, msg: Message) {
+        log::warn!("message: {:?}", msg);
         match self.destination {
             Destination::Channel(channel_id) => {
                 if channel_id != msg.channel_id.0 {
@@ -82,7 +99,10 @@ impl<T: Send + Sync + DeserializeOwned + 'static, Y: Yoinker<T> + Send + Sync + 
                 }
             }
         }
-        self.process_message(msg).await
+        match msg.react(ctx, ReactionType::Unicode("✅".to_owned())).await {
+            Ok(_) => self.process_message(msg).await,
+            Err(err) => log::error!("Got an error while reacting: {:?}", err),
+        }
     }
 }
 
