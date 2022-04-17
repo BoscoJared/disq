@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use clap::{ArgEnum, Parser};
 use disq::{
-    yeet::{Destination, YeetOptions, YeeterBuilder},
+    yeet::{YeetOptions, YeeterBuilder},
     yoink::YoinkOptions,
-    Yeeter, Yoinker,
+    Destination, Yeeter, Yoinker,
 };
 use serde::{Deserialize, Serialize};
 use serenity::client::Client;

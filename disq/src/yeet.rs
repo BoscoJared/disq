@@ -1,7 +1,8 @@
 //! `yeet` is the action of enqueueing a message onto the message queue. In other
 //! message brokers, you can view this action similarly to the role of a Publisher.
 
-use crate::errors::{DisqError, Result};
+use crate::errors::Result;
+use crate::Destination;
 use async_trait::async_trait;
 use serde::Serialize;
 use serenity::client::ClientBuilder;
@@ -17,7 +18,7 @@ use std::sync::{Arc, Mutex};
 pub struct Yeeter<T> {
     http_client: Arc<Http>,
     destination: Destination,
-    options: YeetOptions,
+    _options: YeetOptions,
     _inner: PhantomData<T>,
 }
 
@@ -51,11 +52,11 @@ impl<T: Sync + Send + Serialize + 'static> YeeterBuilder<T> {
 }
 
 impl<T: Serialize> Yeeter<T> {
-    pub fn new(http_client: Arc<Http>, destination: Destination, options: YeetOptions) -> Self {
+    pub fn new(http_client: Arc<Http>, destination: Destination, _options: YeetOptions) -> Self {
         Self {
             http_client,
             destination,
-            options,
+            _options,
             _inner: PhantomData,
         }
     }
@@ -75,11 +76,6 @@ impl<T: Serialize> Yeeter<T> {
 
 #[derive(Debug, Clone)]
 pub struct YeetOptions;
-
-#[derive(Debug, Clone)]
-pub enum Destination {
-    Channel(u64),
-}
 
 #[async_trait]
 impl<T: Send + Sync + Serialize> EventHandler for YeeterBuilder<T> {

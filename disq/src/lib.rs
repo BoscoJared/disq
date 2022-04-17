@@ -21,8 +21,6 @@
 //!
 //! Still here? Let's do this!
 
-use serenity::client::ClientBuilder;
-
 pub mod errors;
 pub mod yeet;
 pub mod yoink;
@@ -30,6 +28,7 @@ pub mod yoink;
 pub use crate::yeet::Yeeter;
 pub use crate::yoink::Yoinker;
 
-pub fn register(client_builder: ClientBuilder) -> ClientBuilder {
-    client_builder
+#[derive(Debug, Clone)]
+pub enum Destination {
+    Channel(u64),
 }

@@ -7,21 +7,17 @@ use std::sync::Arc;
 
 pub struct RawYoinker<T: Send + Sync + DeserializeOwned + 'static, Y: Yoinker<T>> {
     yoinker: Arc<Y>,
-    options: YoinkOptions,
+    _options: YoinkOptions,
     _inner: PhantomData<T>,
 }
 
 impl<T: Send + Sync + DeserializeOwned + 'static, Y: Yoinker<T>> RawYoinker<T, Y> {
-    pub fn new(yoinker: Arc<Y>, options: YoinkOptions) -> Self {
+    pub fn new(yoinker: Arc<Y>, _options: YoinkOptions) -> Self {
         Self {
             yoinker,
-            options,
+            _options,
             _inner: PhantomData,
         }
-    }
-
-    pub fn register(builder: ClientBuilder, options: YoinkOptions) -> (ClientBuilder, Self) {
-        unimplemented!()
     }
 }
 
