@@ -2,7 +2,9 @@ use crate::Destination;
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
 use serenity::client::{ClientBuilder, Context, EventHandler};
-use serenity::model::prelude::Message;
+use serenity::futures::StreamExt;
+use serenity::model::id::ChannelId;
+use serenity::model::prelude::{Message, Ready};
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -21,6 +23,20 @@ impl<T: Send + Sync + DeserializeOwned + 'static, Y: Yoinker<T>> RawYoinker<T, Y
             _options,
             _inner: PhantomData,
         }
+    }
+
+    async fn process_message(&self, msg: Message) {
+        let t: T = match serde_json::from_str(&msg.content) {
+            Ok(parsed) => parsed,
+            Err(_) => {
+                log::warn!(
+                    "We couldn't parse {} into the target structure! Dropping message.",
+                    msg.content
+                );
+                return;
+            }
+        };
+        self.yoinker.on_message(t).await;
     }
 }
 
@@ -46,6 +62,18 @@ pub trait Yoinker<T: DeserializeOwned + Send + Sync + 'static> {
 impl<T: Send + Sync + DeserializeOwned + 'static, Y: Yoinker<T> + Send + Sync + 'static>
     EventHandler for RawYoinker<T, Y>
 {
+    async fn ready(&self, ctx: Context, _ready: Ready) {
+        match self.destination {
+            Destination::Channel(channel_id) => {
+                let mut stream = ChannelId(channel_id).messages_iter(&ctx.http).boxed();
+                while let Some(msg_res) = stream.next().await {
+                    if let Ok(msg) = msg_res {
+                        self.process_message(msg).await;
+                    }
+                }
+            }
+        }
+    }
     async fn message(&self, _ctx: Context, msg: Message) {
         match self.destination {
             Destination::Channel(channel_id) => {
@@ -54,17 +82,7 @@ impl<T: Send + Sync + DeserializeOwned + 'static, Y: Yoinker<T> + Send + Sync + 
                 }
             }
         }
-        let t: T = match serde_json::from_str(&msg.content) {
-            Ok(parsed) => parsed,
-            Err(_) => {
-                log::warn!(
-                    "We couldn't parse {} into the target structure! Dropping message.",
-                    msg.content
-                );
-                return;
-            }
-        };
-        self.yoinker.on_message(t).await;
+        self.process_message(msg).await
     }
 }
 
