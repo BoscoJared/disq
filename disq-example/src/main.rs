@@ -7,7 +7,7 @@ use disq::{
 };
 use serde::{Deserialize, Serialize};
 use serenity::client::Client;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 const YEETER_TOKEN: &str = "YEETER_TOKEN";
 const YOINKER_TOKEN: &str = "YOINKER_TOKEN";
@@ -33,7 +33,7 @@ async fn main() {
     let log_level = args.log_level;
     simple_logger::init_with_level(log_level).unwrap();
     let mode = args.mode;
-    let destination = Destination::Channel(965091322119720991);
+    let destination = Destination::Channel(965405564886732820);
 
     match mode {
         Mode::Yeeter => run_yeeter(destination).await,
@@ -114,7 +114,7 @@ struct Subscriber;
 
 #[async_trait]
 impl Yoinker<Payload> for Subscriber {
-    async fn on_message(&self, data: Payload) {
+    async fn on_message(&self, _data: Payload) {
         // log::warn!("Got data: {:?}", data);
     }
 }
